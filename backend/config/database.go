@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/goravel/framework/contracts/database/driver"
+	mysqlfacades "github.com/goravel/mysql/facades"
 	postgresfacades "github.com/goravel/postgres/facades"
 	"goravel/app/facades"
 )
@@ -25,6 +26,19 @@ func init() {
 				"schema":   config.Env("DB_SCHEMA", "public"),
 				"via": func() (driver.Driver, error) {
 					return postgresfacades.Postgres("postgres")
+				},
+			},
+			"mysql": map[string]any{
+				"host":     config.Env("DB_HOST"),
+				"port":     config.Env("DB_PORT"),
+				"database": config.Env("DB_DATABASE"),
+				"username": config.Env("DB_USERNAME"),
+				"password": config.Env("DB_PASSWORD"),
+				"charset":  "utf8mb4",
+				"prefix":   "",
+				"singular": false,
+				"via": func() (driver.Driver, error) {
+					return mysqlfacades.Mysql("mysql")
 				},
 			},
 		},
