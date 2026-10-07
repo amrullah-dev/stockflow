@@ -170,8 +170,8 @@ func TestAuditLogsReadListReturnsSortedMappedData(t *testing.T) {
 	content, err := response.Content()
 	require.NoError(t, err)
 	require.NotContains(t, content, "password")
-	require.NotContains(t, content, "old_values")
-	require.NotContains(t, content, "new_values")
+	require.Contains(t, content, "old_values")
+	require.Contains(t, content, "new_values")
 	require.NotContains(t, content, "ip_address")
 	require.NotContains(t, content, "user_agent")
 }

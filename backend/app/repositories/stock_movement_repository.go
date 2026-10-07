@@ -21,6 +21,23 @@ func (r *StockMovementRepository) Create(movement *models.StockMovement) error {
 	return r.query.Create(movement)
 }
 
+func (r *StockMovementRepository) FindAll() ([]models.StockMovement, error) {
+	var movements []models.StockMovement
+
+	err := r.query.
+		With("Warehouse").
+		With("Product").
+		With("CreatedByUser").
+		OrderBy("created_at", "desc").
+		OrderBy("id", "desc").
+		Find(&movements)
+	if err != nil {
+		return nil, err
+	}
+
+	return movements, nil
+}
+
 func (r *StockMovementRepository) FindByWarehouseAndProduct(warehouseID, productID uint64) ([]models.StockMovement, error) {
 	var movements []models.StockMovement
 

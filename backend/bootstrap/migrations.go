@@ -24,5 +24,6 @@ func Migrations() []schema.Migration {
 		&migrations.M20260923054121CreateStockMovementsTable{},
 		&migrations.M20260923054124CreateAuditLogsTable{},
 		&migrations.M20260923060000AlterInventoryQuantitiesToBigintTable{},
+		&migrations.M20261007120000AlterStockInItemMoneyPrecision{},
 	}
 }

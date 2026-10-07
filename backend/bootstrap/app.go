@@ -5,12 +5,14 @@ import (
 	"github.com/goravel/framework/foundation"
 
 	"goravel/config"
+	"goravel/database/seeders"
 	"goravel/routes"
 )
 
 func Boot() contractsfoundation.Application {
 	return foundation.Setup().
 		WithMigrations(Migrations).
+		WithSeeders(seeders.Seeders).
 		WithRouting(func() {
 			routes.Web()
 			routes.API()

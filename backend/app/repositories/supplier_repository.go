@@ -28,3 +28,25 @@ func (r *SupplierRepository) FindByID(id uint64) (*models.Supplier, error) {
 
 	return supplier, nil
 }
+
+func (r *SupplierRepository) FindAll() ([]models.Supplier, error) {
+	var suppliers []models.Supplier
+	if err := r.query.OrderBy("id", "asc").Find(&suppliers); err != nil {
+		return nil, err
+	}
+	return suppliers, nil
+}
+
+func (r *SupplierRepository) Create(supplier *models.Supplier) error {
+	return r.query.Create(supplier)
+}
+
+func (r *SupplierRepository) Update(supplier *models.Supplier, values map[string]any) error {
+	_, err := r.query.Model(supplier).Update(values)
+	return err
+}
+
+func (r *SupplierRepository) Delete(supplier *models.Supplier) error {
+	_, err := r.query.Where("id = ?", supplier.ID).Delete(&models.Supplier{})
+	return err
+}

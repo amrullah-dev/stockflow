@@ -24,6 +24,8 @@ type AuditLogListResponse struct {
 	SubjectID   uint64                `json:"subject_id"`
 	UserID      *uint64               `json:"user_id"`
 	User        *AuditLogUserResponse `json:"user"`
+	OldValues   string                `json:"old_values"`
+	NewValues   string                `json:"new_values"`
 	CreatedAt   *carbon.DateTime      `json:"created_at"`
 }
 
@@ -98,6 +100,8 @@ func auditLogListResponse(log models.AuditLog) AuditLogListResponse {
 		SubjectID:   log.SubjectID,
 		UserID:      log.UserID,
 		User:        auditLogUserResponse(log.User),
+		OldValues:   log.OldValues,
+		NewValues:   log.NewValues,
 		CreatedAt:   log.CreatedAt,
 	}
 }

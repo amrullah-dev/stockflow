@@ -32,7 +32,13 @@ func API() {
 	stockInController := controllers.NewStockInController(stockInService, stockInQueryService)
 	stockOutQueryService := services.NewStockOutQueryService(repositories.NewStockOutRepository(query))
 	stockOutController := controllers.NewStockOutController(stockOutService, stockOutQueryService)
+	stockMovementQueryService := services.NewStockMovementQueryService(repositories.NewStockMovementRepository(query))
+	stockMovementController := controllers.NewStockMovementController(stockMovementQueryService)
+	categoryController := controllers.NewCategoryController(services.NewCategoryService(facades.Orm()))
+	supplierController := controllers.NewSupplierController(services.NewSupplierService(facades.Orm()))
+	authController := controllers.NewAuthController(services.NewAuthService(facades.Orm()))
 
+	facades.Route().Prefix("/api").Post("/login", authController.Login)
 	facades.Route().
 		Prefix("/api").
 		Middleware(&middleware.Authenticate{}).
@@ -57,8 +63,19 @@ func API() {
 			router.Get("/warehouse-transfers/{id}", warehouseTransferController.Show)
 			router.Get("/audit-logs", auditLogController.Index)
 			router.Get("/audit-logs/{id}", auditLogController.Show)
+			router.Get("/stock-movements", stockMovementController.Index)
 			router.Get("/warehouses/{warehouse_id}/stocks", warehouseStockController.Index)
 			router.Get("/products", productController.Index)
 			router.Get("/warehouses", warehouseController.Index)
+			router.Get("/categories", categoryController.Index)
+			router.Get("/categories/{id}", categoryController.Show)
+			router.Post("/categories", categoryController.Store)
+			router.Put("/categories/{id}", categoryController.Update)
+			router.Delete("/categories/{id}", categoryController.Destroy)
+			router.Get("/suppliers", supplierController.Index)
+			router.Get("/suppliers/{id}", supplierController.Show)
+			router.Post("/suppliers", supplierController.Store)
+			router.Put("/suppliers/{id}", supplierController.Update)
+			router.Delete("/suppliers/{id}", supplierController.Destroy)
 		})
 }

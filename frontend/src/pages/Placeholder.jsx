@@ -1,0 +1,1 @@
+export default function Placeholder({ title }) { return <div className="placeholder-page"><div className="placeholder-mark">◫</div><div className="eyebrow">Coming next</div><h2>{title}</h2><p className="muted">This module will be implemented in the next phase.</p></div> }
