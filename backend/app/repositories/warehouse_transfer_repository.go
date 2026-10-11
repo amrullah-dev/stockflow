@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"time"
 
 	contractsorm "github.com/goravel/framework/contracts/database/orm"
@@ -72,17 +73,17 @@ func (r *WarehouseTransferRepository) FindByIDForRead(id uint64) (*models.Wareho
 // FindByIDForUpdate returns and locks a warehouse transfer together with its
 // items. The supplied query must already be inside a database transaction.
 func (r *WarehouseTransferRepository) FindByIDForUpdate(id uint64) (*models.WarehouseTransfer, error) {
-	transfer := &models.WarehouseTransfer{}
-
-	if err := r.query.
-		With("Items").
-		Where("id = ?", id).
-		LockForUpdate().
-		FindOrFail(transfer); err != nil {
+	var transfer models.WarehouseTransfer
+	if err := r.query.Where("id = ?", id).First(&transfer); err != nil {
+		fmt.Printf("[DEBUG REPO] Transfer Find Error: %v for ID: %d\n", err, id)
 		return nil, err
 	}
-
-	return transfer, nil
+	var items []models.WarehouseTransferItem
+	if err := r.query.Where("transfer_id = ?", id).Find(&items); err != nil {
+		return nil, err
+	}
+	transfer.Items = items
+	return &transfer, nil
 }
 
 func (r *WarehouseTransferRepository) FindByReferenceNumber(referenceNumber string) (*models.WarehouseTransfer, error) {
@@ -109,6 +110,7 @@ func (r *WarehouseTransferRepository) FindItems(transferID uint64) ([]models.War
 	var items []models.WarehouseTransferItem
 
 	if err := r.query.
+		Model(&models.WarehouseTransferItem{}).
 		Where("transfer_id = ?", transferID).
 		Find(&items); err != nil {
 		return nil, err

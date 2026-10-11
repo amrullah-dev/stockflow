@@ -104,6 +104,7 @@ func (s *StockOutService) Post(ctx context.Context, stockOutID, actorID uint64) 
 		auditLogService := NewAuditLogService(auditLogRepository)
 
 		stockOut, err := stockOutRepository.FindByIDForUpdate(stockOutID)
+		fmt.Printf("[DEBUG SERVICE POST] Panggil Service Post untuk ID: %d, Err: %v\n", stockOutID, err)
 		if err != nil {
 			return err
 		}
@@ -132,9 +133,11 @@ func (s *StockOutService) Post(ctx context.Context, stockOutID, actorID uint64) 
 				productID,
 			)
 			if err != nil {
+				if errors.Is(err, frameworkerrors.OrmRecordNotFound) {
+					return fmt.Errorf("%w: product ID %d", ErrStockOutInsufficientStock, productID)
+				}
 				return err
 			}
-
 			lockedStocks[productID] = stock
 		}
 
@@ -152,8 +155,10 @@ func (s *StockOutService) Post(ctx context.Context, stockOutID, actorID uint64) 
 
 			balanceAfter := balanceBefore - item.Quantity
 			if err := warehouseStockRepository.UpdateQuantity(stock, balanceAfter); err != nil {
+				fmt.Printf("[DEBUG EXEC] Step Stock Update Product %d, Err: %v\n", item.ProductID, err)
 				return err
 			}
+			fmt.Printf("[DEBUG EXEC] Step Stock Update Product %d, Err: %v\n", item.ProductID, nil)
 
 			referenceID := uint64(stockOut.ID)
 			createdBy := actorID
@@ -170,8 +175,10 @@ func (s *StockOutService) Post(ctx context.Context, stockOutID, actorID uint64) 
 			}
 
 			if err := stockMovementRepository.Create(movement); err != nil {
+				fmt.Printf("[DEBUG EXEC] Step Movement Insert, Err: %v\n", err)
 				return err
 			}
+			fmt.Printf("[DEBUG EXEC] Step Movement Insert, Err: %v\n", nil)
 		}
 
 		oldValues := "status=" + stockOut.Status
@@ -186,8 +193,10 @@ func (s *StockOutService) Post(ctx context.Context, stockOutID, actorID uint64) 
 			"",
 			"",
 		); err != nil {
+			fmt.Printf("[DEBUG EXEC] Step Audit Log Insert, Err: %v\n", err)
 			return err
 		}
+		fmt.Printf("[DEBUG EXEC] Step Audit Log Insert, Err: %v\n", nil)
 
 		if err := stockOutRepository.UpdateStatus(stockOut, StockStatusPosted); err != nil {
 			return err
@@ -207,7 +216,8 @@ func validateStockOutForPosting(stockOut *models.StockOut) error {
 		return ErrStockOutAlreadyPosted
 	}
 
-	if stockOut.Status != StockStatusDraft {
+	fmt.Printf("[DEBUG VALIDATE] Status: %s, Items Count: %d\n", stockOut.Status, len(stockOut.Items))
+	if strings.ToUpper(stockOut.Status) != "DRAFT" {
 		return fmt.Errorf("%w: %s", ErrStockOutInvalidStatus, stockOut.Status)
 	}
 

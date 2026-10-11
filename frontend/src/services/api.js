@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api').replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/$/, '')
 
 export class ApiError extends Error {
   constructor(message, status, payload) {
@@ -16,15 +16,28 @@ async function request(path, options = {}) {
   const token = localStorage.getItem('stockflow_token')
   if (options.auth !== false && token) headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
-  const payload = await response.json().catch(() => null)
+  const url = `${API_BASE_URL}${path}`
+  const response = await fetch(url, { ...options, headers })
+  const responseText = await response.text()
+  const bodyPreview = responseText.trim().slice(0, 500)
+
+  let payload = null
+  if (responseText.trim()) {
+    try { payload = JSON.parse(responseText) } catch { payload = null }
+  }
 
   if (response.status === 401) {
     localStorage.removeItem('stockflow_token')
     localStorage.removeItem('stockflow_user')
     if (window.location.pathname !== '/login') window.location.assign('/login')
   }
-  if (!response.ok) throw new ApiError(payload?.message || 'Request failed', response.status, payload)
+  if (!response.ok) {
+    const detail = payload?.message || bodyPreview
+    throw new ApiError(detail || `Request failed (${response.status})`, response.status, payload)
+  }
+  if (!payload) {
+    throw new ApiError(`API returned non-JSON response (${response.status})${bodyPreview ? `: ${bodyPreview}` : ''}`, response.status, null)
+  }
   return payload
 }
 

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/goravel/framework/contracts/http"
@@ -115,6 +116,7 @@ func (c *StockOutController) Destroy(ctx http.Context) http.Response {
 
 func (c *StockOutController) Post(ctx http.Context) http.Response {
 	stockOutID := ctx.Request().RouteInt64("id")
+	fmt.Printf("[DEBUG POST] Route ID: %d\n", stockOutID)
 	if stockOutID <= 0 {
 		return errorResponse(ctx, http.StatusUnprocessableEntity, "invalid stock-out ID")
 	}

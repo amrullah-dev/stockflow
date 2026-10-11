@@ -14,6 +14,12 @@ import StockInDetail from './pages/StockInDetail'
 import Stocks from './pages/Stocks'
 import AuditLogs from './pages/AuditLogs'
 import StockMovements from './pages/StockMovements'
+import StockOuts from './pages/StockOuts'
+import StockOutForm from './pages/StockOutForm'
+import StockOutDetail from './pages/StockOutDetail'
+import Transfers from './pages/Transfers'
+import TransferForm from './pages/TransferForm'
+import TransferDetail from './pages/TransferDetail'
 
 const placeholderRoutes = [
   ['products', 'Products'],
@@ -42,10 +48,18 @@ export default function App() {
           <Route path="/stocks/movements" element={<StockMovements />} />
           <Route path="/audit-logs" element={<AuditLogs />} />
           <Route path="/stock-ins" element={<StockIns />} />
+          <Route path="/transfers" element={<Transfers />} />
+          <Route path="/transfers/new" element={<TransferForm />} />
+          <Route path="/transfers/:id/edit" element={<TransferForm />} />
+          <Route path="/transfers/:id" element={<TransferDetail />} />
+          <Route path="/stock-outs" element={<StockOuts />} />
+          <Route path="/stock-outs/new" element={<StockOutForm />} />
+          <Route path="/stock-outs/:id/edit" element={<StockOutForm />} />
+          <Route path="/stock-outs/:id" element={<StockOutDetail />} />
           <Route path="/stock-ins/new" element={<StockInForm />} />
           <Route path="/stock-ins/:id/edit" element={<StockInForm />} />
           <Route path="/stock-ins/:id" element={<StockInDetail />} />
-          {placeholderRoutes.filter(([path]) => !['products', 'warehouses', 'stocks', 'stock-ins', 'audit-logs'].includes(path)).map(([path, title]) => (
+          {placeholderRoutes.filter(([path]) => !['products', 'warehouses', 'stocks', 'stock-ins', 'stock-outs', 'transfers', 'audit-logs'].includes(path)).map(([path, title]) => (
             <Route key={path} path={`/${path}`} element={<Placeholder title={title} />} />
           ))}
         </Route>

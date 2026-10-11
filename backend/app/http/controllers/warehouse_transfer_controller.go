@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/goravel/framework/contracts/http"
@@ -115,6 +116,7 @@ func (c *WarehouseTransferController) Destroy(ctx http.Context) http.Response {
 
 func (c *WarehouseTransferController) Post(ctx http.Context) http.Response {
 	transferID := ctx.Request().RouteInt64("id")
+	fmt.Printf("[DEBUG POST] Route ID: %d\n", transferID)
 	if transferID <= 0 {
 		return errorResponse(ctx, http.StatusUnprocessableEntity, "invalid warehouse transfer ID")
 	}

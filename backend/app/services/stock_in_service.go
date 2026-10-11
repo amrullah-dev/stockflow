@@ -112,6 +112,7 @@ func (s *StockInService) Post(ctx context.Context, stockInID, actorID uint64) er
 		auditLogService := NewAuditLogService(auditLogRepository)
 
 		stockIn, err := stockInRepository.FindByIDForUpdate(stockInID)
+		fmt.Printf("[DEBUG SERVICE POST] Panggil Service Post untuk ID: %d, Err: %v\n", stockInID, err)
 		if err != nil {
 			return err
 		}
@@ -140,9 +141,15 @@ func (s *StockInService) Post(ctx context.Context, stockInID, actorID uint64) er
 				productID,
 			)
 			if err != nil {
-				return err
+				if errors.Is(err, frameworkerrors.OrmRecordNotFound) {
+					stock = &models.WarehouseStock{WarehouseID: stockIn.WarehouseID, ProductID: productID, Quantity: 0}
+					if err := warehouseStockRepository.Create(stock); err != nil {
+						return err
+					}
+				} else {
+					return err
+				}
 			}
-
 			lockedStocks[productID] = stock
 		}
 
@@ -153,8 +160,10 @@ func (s *StockInService) Post(ctx context.Context, stockInID, actorID uint64) er
 			balanceAfter := balanceBefore + item.Quantity
 
 			if err := warehouseStockRepository.UpdateQuantity(stock, balanceAfter); err != nil {
+				fmt.Printf("[DEBUG EXEC] Step Stock Update Product %d, Err: %v\n", item.ProductID, err)
 				return err
 			}
+			fmt.Printf("[DEBUG EXEC] Step Stock Update Product %d, Err: %v\n", item.ProductID, nil)
 
 			referenceID := uint64(stockIn.ID)
 			createdBy := actorID
@@ -171,8 +180,10 @@ func (s *StockInService) Post(ctx context.Context, stockInID, actorID uint64) er
 			}
 
 			if err := stockMovementRepository.Create(movement); err != nil {
+				fmt.Printf("[DEBUG EXEC] Step Movement Insert, Err: %v\n", err)
 				return err
 			}
+			fmt.Printf("[DEBUG EXEC] Step Movement Insert, Err: %v\n", nil)
 		}
 
 		oldValues := "status=" + stockIn.Status
@@ -187,8 +198,10 @@ func (s *StockInService) Post(ctx context.Context, stockInID, actorID uint64) er
 			"",
 			"",
 		); err != nil {
+			fmt.Printf("[DEBUG EXEC] Step Audit Log Insert, Err: %v\n", err)
 			return err
 		}
+		fmt.Printf("[DEBUG EXEC] Step Audit Log Insert, Err: %v\n", nil)
 
 		if err := stockInRepository.UpdateStatus(stockIn, StockStatusPosted); err != nil {
 			return err
@@ -208,7 +221,8 @@ func validateStockInForPosting(stockIn *models.StockIn) error {
 		return ErrStockInAlreadyPosted
 	}
 
-	if stockIn.Status != StockStatusDraft {
+	fmt.Printf("[DEBUG VALIDATE] Status: %s, Items Count: %d\n", stockIn.Status, len(stockIn.Items))
+	if strings.ToUpper(stockIn.Status) != "DRAFT" {
 		return fmt.Errorf("%w: %s", ErrStockInInvalidStatus, stockIn.Status)
 	}
 

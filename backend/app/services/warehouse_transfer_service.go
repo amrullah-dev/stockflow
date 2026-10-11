@@ -109,6 +109,7 @@ func (s *WarehouseTransferService) Post(ctx context.Context, transferID, actorID
 		auditLogService := NewAuditLogService(auditLogRepository)
 
 		transfer, err := transferRepository.FindByIDForUpdate(transferID)
+		fmt.Printf("[DEBUG SERVICE POST] Panggil Service Post untuk ID: %d, Err: %v\n", transferID, err)
 		if err != nil {
 			return err
 		}
@@ -125,7 +126,17 @@ func (s *WarehouseTransferService) Post(ctx context.Context, transferID, actorID
 				key.productID,
 			)
 			if err != nil {
-				return err
+				if errors.Is(err, frameworkerrors.OrmRecordNotFound) {
+					if key.warehouseID != transfer.ToWarehouseID {
+						return fmt.Errorf("%w: product ID %d", ErrWarehouseTransferInsufficientStock, key.productID)
+					}
+					stock = &models.WarehouseStock{WarehouseID: key.warehouseID, ProductID: key.productID, Quantity: 0}
+					if err := stockRepository.Create(stock); err != nil {
+						return err
+					}
+				} else {
+					return err
+				}
 			}
 
 			lockedStocks[key] = stock
@@ -160,11 +171,15 @@ func (s *WarehouseTransferService) Post(ctx context.Context, transferID, actorID
 			destinationAfter := destinationBefore + item.Quantity
 
 			if err := stockRepository.UpdateQuantity(sourceStock, sourceAfter); err != nil {
+				fmt.Printf("[DEBUG EXEC] Step Stock Update Product %d, Err: %v\n", item.ProductID, err)
 				return err
 			}
+			fmt.Printf("[DEBUG EXEC] Step Stock Update Product %d, Err: %v\n", item.ProductID, nil)
 			if err := stockRepository.UpdateQuantity(destinationStock, destinationAfter); err != nil {
+				fmt.Printf("[DEBUG EXEC] Step Stock Update Product %d, Err: %v\n", item.ProductID, err)
 				return err
 			}
+			fmt.Printf("[DEBUG EXEC] Step Stock Update Product %d, Err: %v\n", item.ProductID, nil)
 
 			sourceMovement := &models.StockMovement{
 				WarehouseID:   transfer.FromWarehouseID,
@@ -178,8 +193,10 @@ func (s *WarehouseTransferService) Post(ctx context.Context, transferID, actorID
 				CreatedBy:     &createdBy,
 			}
 			if err := movementRepository.Create(sourceMovement); err != nil {
+				fmt.Printf("[DEBUG EXEC] Step Movement Insert, Err: %v\n", err)
 				return err
 			}
+			fmt.Printf("[DEBUG EXEC] Step Movement Insert, Err: %v\n", nil)
 
 			destinationMovement := &models.StockMovement{
 				WarehouseID:   transfer.ToWarehouseID,
@@ -193,8 +210,10 @@ func (s *WarehouseTransferService) Post(ctx context.Context, transferID, actorID
 				CreatedBy:     &createdBy,
 			}
 			if err := movementRepository.Create(destinationMovement); err != nil {
+				fmt.Printf("[DEBUG EXEC] Step Movement Insert, Err: %v\n", err)
 				return err
 			}
+			fmt.Printf("[DEBUG EXEC] Step Movement Insert, Err: %v\n", nil)
 
 			sourceStock.Quantity = sourceAfter
 			destinationStock.Quantity = destinationAfter
@@ -212,8 +231,10 @@ func (s *WarehouseTransferService) Post(ctx context.Context, transferID, actorID
 			"",
 			"",
 		); err != nil {
+			fmt.Printf("[DEBUG EXEC] Step Audit Log Insert, Err: %v\n", err)
 			return err
 		}
+		fmt.Printf("[DEBUG EXEC] Step Audit Log Insert, Err: %v\n", nil)
 
 		if err := transferRepository.UpdateStatus(transfer, StockStatusPosted); err != nil {
 			return err
@@ -267,7 +288,8 @@ func validateWarehouseTransferForPosting(transfer *models.WarehouseTransfer) err
 		return ErrWarehouseTransferAlreadyPosted
 	}
 
-	if transfer.Status != StockStatusDraft {
+	fmt.Printf("[DEBUG VALIDATE] Status: %s, Items Count: %d\n", transfer.Status, len(transfer.Items))
+	if strings.ToUpper(transfer.Status) != "DRAFT" {
 		return fmt.Errorf("%w: %s", ErrWarehouseTransferInvalidStatus, transfer.Status)
 	}
 

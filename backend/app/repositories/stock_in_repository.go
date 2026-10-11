@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"time"
 
 	contractsorm "github.com/goravel/framework/contracts/database/orm"
@@ -70,17 +71,17 @@ func (r *StockInRepository) FindByIDForRead(id uint64) (*models.StockIn, error) 
 // FindByIDForUpdate returns and locks a stock-in transaction together with its
 // items. The supplied query must already be inside a database transaction.
 func (r *StockInRepository) FindByIDForUpdate(id uint64) (*models.StockIn, error) {
-	stockIn := &models.StockIn{}
-
-	if err := r.query.
-		With("Items").
-		Where("id = ?", id).
-		LockForUpdate().
-		FindOrFail(stockIn); err != nil {
+	var stockIn models.StockIn
+	if err := r.query.Where("id = ?", id).First(&stockIn); err != nil {
+		fmt.Printf("[DEBUG REPO] StockIN Find Error: %v for ID: %d\n", err, id)
 		return nil, err
 	}
-
-	return stockIn, nil
+	var items []models.StockInItem
+	if err := r.query.Where("stock_in_id = ?", id).Find(&items); err != nil {
+		return nil, err
+	}
+	stockIn.Items = items
+	return &stockIn, nil
 }
 
 func (r *StockInRepository) FindByReferenceNumber(referenceNumber string) (*models.StockIn, error) {
@@ -107,6 +108,7 @@ func (r *StockInRepository) FindItems(stockInID uint64) ([]models.StockInItem, e
 	var items []models.StockInItem
 
 	if err := r.query.
+		Model(&models.StockInItem{}).
 		Where("stock_in_id = ?", stockInID).
 		Find(&items); err != nil {
 		return nil, err
